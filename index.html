@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>一般社団法人オリコム</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #E8703A;
+      --green:  #7DC242;
+      --blue:   #5BB8F5;
+      --dark:   #1a1a1a;
+      --mid:    #666;
+      --light:  #f5f2ed;
+      --white:  #ffffff;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Noto Sans JP', sans-serif; background: var(--light); color: var(--dark); overflow-x: hidden; }
+
+    /* ===== LOADER ===== */
+    #loader {
+      position: fixed; inset: 0; background: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+    #loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    #loader-canvas { width: 120px; height: 120px; }
+
+    /* ===== NAV ===== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2.5rem;
+      background: rgba(245,242,237,0.93);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(0,0,0,0.07);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--dark); }
+    .nav-logo span { font-family: 'Noto Serif JP', serif; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.05em; }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a { text-decoration: none; color: var(--mid); font-size: 0.85rem; font-weight: 500; letter-spacing: 0.04em; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--orange); }
+    .ham { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+    .ham span { display: block; width: 22px; height: 1.5px; background: var(--dark); transition: all 0.25s; }
+    .ham.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .ham.open span:nth-child(2) { opacity: 0; }
+    .ham.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+    .mobile-menu {
+      display: none; position: fixed; inset: 0; top: 57px;
+      background: var(--light); z-index: 99;
+      flex-direction: column; padding: 2.5rem; gap: 2rem;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { text-decoration: none; color: var(--dark); font-size: 1.1rem; font-weight: 500; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 1.2rem; }
+
+    /* ===== HERO ===== */
+    #hero { min-height: 100svh; display: grid; grid-template-columns: 1fr 1fr; padding-top: 57px; overflow: hidden; }
+    .hero-left { display: flex; flex-direction: column; justify-content: center; padding: 6rem 4rem 6rem 5rem; }
+    .hero-tag { display: inline-block; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.12em; color: var(--orange); border: 1px solid var(--orange); padding: 4px 14px; border-radius: 100px; margin-bottom: 1.5rem; animation: fadeUp 0.7s ease 1.2s both; }
+    .hero-title { font-family: 'Noto Serif JP', serif; font-size: clamp(1.8rem, 3.5vw, 3rem); font-weight: 700; line-height: 1.6; animation: fadeUp 0.7s ease 1.4s both; }
+    .hero-title em { font-style: normal; color: var(--orange); }
+    .hero-sub { margin-top: 1.5rem; font-size: 0.93rem; color: var(--mid); line-height: 1.9; max-width: 400px; animation: fadeUp 0.7s ease 1.6s both; }
+    .hero-cta { margin-top: 2.5rem; display: flex; gap: 1rem; flex-wrap: wrap; animation: fadeUp 0.7s ease 1.8s both; }
+    .btn-primary { display: inline-block; padding: 12px 28px; background: var(--orange); color: white; text-decoration: none; border-radius: 4px; font-size: 0.88rem; font-weight: 500; transition: background 0.2s, transform 0.2s; }
+    .btn-primary:hover { background: #d0612c; transform: translateY(-2px); }
+    .btn-outline { display: inline-block; padding: 12px 28px; border: 1.5px solid var(--dark); color: var(--dark); text-decoration: none; border-radius: 4px; font-size: 0.88rem; font-weight: 500; transition: all 0.2s; }
+    .btn-outline:hover { background: var(--dark); color: white; transform: translateY(-2px); }
+
+    /* SLIDESHOW */
+    .hero-right { position: relative; overflow: hidden; background: var(--dark); animation: fadeIn 1s ease 0.4s both; }
+    .slideshow { position: absolute; inset: 0; }
+    .slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease; }
+    .slide.active { opacity: 1; }
+    .slide img { width: 100%; height: 100%; object-fit: cover; }
+    .slide-overlay { position: absolute; inset: 0; background: linear-gradient(to right, rgba(26,26,26,0.3), transparent); }
+    .slide-dots { position: absolute; bottom: 1.5rem; right: 1.5rem; display: flex; gap: 8px; z-index: 2; }
+    .slide-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; transition: background 0.3s, transform 0.3s; border: none; }
+    .slide-dot.active { background: white; transform: scale(1.2); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ===== SECTION BASE ===== */
+    .section-label { font-size: 0.7rem; letter-spacing: 0.18em; color: var(--orange); text-transform: uppercase; margin-bottom: 0.8rem; font-weight: 500; }
+    .section-title { font-family: 'Noto Serif JP', serif; font-size: clamp(1.5rem, 2.5vw, 2.2rem); font-weight: 700; line-height: 1.5; margin-bottom: 1.5rem; }
+    .section-body { font-size: 0.92rem; color: var(--mid); line-height: 1.95; }
+
+    /* ===== VISION ===== */
+    #vision { background: var(--white); padding: 7rem 5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; }
+    .vision-pills { display: flex; flex-direction: column; gap: 1rem; }
+    .pill { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-radius: 8px; font-size: 0.88rem; font-weight: 500; }
+    .pill .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    /* ヒト=青、モノ=緑、コト=オレンジ */
+    .pill-hito  { background: rgba(91,184,245,0.1);  color: #2370a8; }
+    .pill-hito  .dot { background: var(--blue); }
+    .pill-mono  { background: rgba(125,194,66,0.1);  color: #4e8a15; }
+    .pill-mono  .dot { background: var(--green); }
+    .pill-koto  { background: rgba(232,112,58,0.1);  color: #c05a25; }
+    .pill-koto  .dot { background: var(--orange); }
+
+    /* ===== PROJECTS ===== */
+    #projects { padding: 7rem 5rem; background: var(--light); }
+    .projects-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-top: 3rem; }
+    .project-card { background: var(--white); border-radius: 10px; overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; }
+    .project-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+    .card-top { height: 5px; }
+    .card-img { width: 100%; height: 200px; object-fit: cover; display: block; }
+    .card-body { padding: 1.6rem; }
+    .card-title { font-family: 'Noto Serif JP', serif; font-size: 1.05rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .card-sub { font-size: 0.75rem; margin-bottom: 0.8rem; font-weight: 500; }
+    .card-text { font-size: 0.86rem; color: var(--mid); line-height: 1.85; }
+    .card-link { display: inline-block; margin-top: 1.2rem; font-size: 0.8rem; text-decoration: none; font-weight: 500; border-bottom: 1px solid; padding-bottom: 1px; }
+    /* カード色: さんとしょ=青、まちなか=緑、屋台=オレンジ */
+    .card-blue  .card-top { background: var(--blue); }
+    .card-blue  .card-sub  { color: #2370a8; }
+    .card-blue  .card-link { color: var(--blue); border-color: var(--blue); }
+    .card-green .card-top { background: var(--green); }
+    .card-green .card-sub  { color: #4e8a15; }
+    .card-green .card-link { color: var(--green); border-color: var(--green); }
+    .card-orange .card-top { background: var(--orange); }
+    .card-orange .card-sub  { color: #c05a25; }
+    .card-orange .card-link { color: var(--orange); border-color: var(--orange); }
+
+    /* ===== ABOUT ===== */
+    #about { background: var(--dark); color: white; padding: 7rem 5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: start; }
+    #about .section-title { color: white; }
+    #about .section-body { color: rgba(255,255,255,0.6); }
+    .about-table { width: 100%; border-collapse: collapse; margin-top: 2rem; }
+    .about-table tr { border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .about-table td { padding: 1rem 0; font-size: 0.875rem; vertical-align: top; }
+    .about-table td:first-child { color: rgba(255,255,255,0.4); width: 110px; font-weight: 500; }
+    .about-table td:last-child { color: rgba(255,255,255,0.82); line-height: 1.85; }
+
+    /* ===== CONTACT ===== */
+    #contact { background: var(--light); padding: 7rem 5rem; text-align: center; }
+    #contact .section-title { margin: 0 auto 1rem; }
+    #contact .section-body { margin: 0 auto 2.5rem; }
+    .contact-sns { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+    .sns-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; border: 1.5px solid currentColor; }
+    .sns-tw { color: #1da1f2; } .sns-tw:hover { background: #1da1f2; color: white; }
+    .sns-fb { color: #1877f2; } .sns-fb:hover { background: #1877f2; color: white; }
+    .sns-ig { color: #e1306c; } .sns-ig:hover { background: #e1306c; color: white; }
+
+    /* ===== FOOTER ===== */
+    footer { background: var(--dark); color: rgba(255,255,255,0.35); padding: 2rem 5rem; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.07); }
+    .footer-left { display: flex; align-items: center; gap: 10px; }
+    .footer-left span { font-size: 0.82rem; color: rgba(255,255,255,0.45); }
+    footer p { font-size: 0.75rem; }
+
+    /* ===== SCROLL REVEAL ===== */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      #hero { grid-template-columns: 1fr; }
+      .hero-right { min-height: 280px; }
+      .hero-left { padding: 4rem 2rem; }
+      #vision, #about { grid-template-columns: 1fr; gap: 3rem; padding: 4rem 2rem; }
+      #projects, #contact { padding: 4rem 2rem; }
+      .projects-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 1rem; text-align: center; padding: 2rem; }
+      .nav-links { display: none; }
+      .ham { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <canvas id="loader-canvas" width="120" height="120"></canvas>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <canvas id="nav-canvas" width="36" height="36"></canvas>
+    <span>一般社団法人オリコム</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#vision">ビジョン</a></li>
+    <li><a href="#projects">プロジェクト</a></li>
+    <li><a href="#about">法人概要</a></li>
+    <li><a href="#contact">お問い合わせ</a></li>
+  </ul>
+  <button class="ham" id="ham" aria-label="メニュー">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#vision" onclick="closeMobile()">ビジョン</a>
+  <a href="#projects" onclick="closeMobile()">プロジェクト</a>
+  <a href="#about" onclick="closeMobile()">法人概要</a>
+  <a href="#contact" onclick="closeMobile()">お問い合わせ</a>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-left">
+    <span class="hero-tag">一般社団法人オリコム</span>
+    <h1 class="hero-title">ヒト・モノ・コトを<br>マチに<em>織り込む</em></h1>
+    <p class="hero-sub">兵庫県尼崎市を拠点に、人と人の顔の見えるゴキゲンな暮らしをアップデートしていきます。</p>
+    <div class="hero-cta">
+      <a href="#projects" class="btn-primary">プロジェクトを見る</a>
+      <a href="#about" class="btn-outline">法人概要</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="slideshow" id="slideshow">
+      <div class="slide active"><img src="images/slide1.jpg" alt="スライド1"><div class="slide-overlay"></div></div>
+      <div class="slide"><img src="images/slide2.jpg" alt="スライド2"><div class="slide-overlay"></div></div>
+      <div class="slide"><img src="images/slide3.jpg" alt="スライド3"><div class="slide-overlay"></div></div>
+    </div>
+    <div class="slide-dots" id="slide-dots">
+      <button class="slide-dot active" onclick="goSlide(0)"></button>
+      <button class="slide-dot" onclick="goSlide(1)"></button>
+      <button class="slide-dot" onclick="goSlide(2)"></button>
+    </div>
+  </div>
+</section>
+
+<!-- VISION -->
+<section id="vision">
+  <div class="reveal">
+    <p class="section-label">Vision</p>
+    <h2 class="section-title">持続可能な地域づくりと<br>社会の実現を目指して</h2>
+    <p class="section-body">社会構造の変化によりあらゆることがサービスとして提供され、享受することが当たり前になった現代。私たちは、ヒト・モノ・コトをマチに織り込むことで、社会に関わる主体を増やし、それぞれが社会のことも意識するように働きかけます。</p>
+  </div>
+  <div class="vision-pills reveal">
+    <div class="pill pill-hito"><span class="dot"></span>ヒトをマチに織り込む</div>
+    <div class="pill pill-mono"><span class="dot"></span>モノをマチに織り込む</div>
+    <div class="pill pill-koto"><span class="dot"></span>コトをマチに織り込む</div>
+  </div>
+</section>
+
+<!-- PROJECTS -->
+<section id="projects">
+  <div class="reveal">
+    <p class="section-label">Projects</p>
+    <h2 class="section-title">プロジェクト</h2>
+  </div>
+  <div class="projects-grid">
+    <div class="project-card card-blue reveal">
+      <div class="card-top"></div>
+      <img class="card-img" src="images/santosho.jpg" alt="さんとしょ">
+      <div class="card-body">
+        <h3 class="card-title">さんとしょ</h3>
+        <p class="card-sub">さんわにあるみんなのとしょかん</p>
+        <p class="card-text">尼崎市の三和本通商店街にあるシェア型の民設図書館。1箱本棚オーナー制度を採用し、デザインも運営もマチに開きながら進めています。</p>
+        <a href="https://sites.google.com/view/3tosyo/home" target="_blank" class="card-link">公式サイトへ →</a>
+      </div>
+    </div>
+    <div class="project-card card-green reveal">
+      <div class="card-top"></div>
+      <img class="card-img" src="images/machinaka.jpg" alt="まちなか本棚">
+      <div class="card-body">
+        <h3 class="card-title">まちなか本棚</h3>
+        <p class="card-sub">まちの人の本が循環する本棚</p>
+        <p class="card-text">誰もが立ち寄ることができるパブリックスペースに、不要になった本が次の人へ循環する本棚を設置。多くの人が本にアクセスできるまちを目指しています。</p>
+        <a href="https://www.instagram.com/machinaka_hondana/" target="_blank" class="card-link">Instagramへ →</a>
+      </div>
+    </div>
+    <div class="project-card card-orange reveal">
+      <div class="card-top"></div>
+      <img class="card-img" src="images/yatai.jpg" alt="まちで踊る屋台">
+      <div class="card-body">
+        <h3 class="card-title">まちで踊る屋台</h3>
+        <p class="card-sub">小商いのハードルをグッと下げる</p>
+        <p class="card-text">屋台を使っての出店や、自転車のまち尼崎ならではのアマガサキ前かごマルシェプロジェクトにも参画しています。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="reveal">
+    <p class="section-label" style="color:rgba(255,255,255,0.4);">About</p>
+    <h2 class="section-title">法人概要</h2>
+    <p class="section-body">尼崎らしい下町に受け継がれてきた人と人の顔の見えるゴキゲンな暮らしを、これからの時代に沿うようにいろいろな要素を織り込んでアップデートしていきます。</p>
+  </div>
+  <div class="reveal">
+    <table class="about-table">
+      <tr><td>法人名</td><td>一般社団法人オリコム</td></tr>
+      <tr><td>代表理事</td><td>柏木洸一</td></tr>
+      <tr><td>理事</td><td>杉原竜太・白崎友朗</td></tr>
+      <tr><td>所在地</td><td>兵庫県尼崎市</td></tr>
+      <tr><td>設立</td><td>2022年6月</td></tr>
+      <tr><td>活動目的</td><td>ヒト、モノ、コトを繋げ、持続可能な地域づくり及び持続可能な社会づくりに貢献すること</td></tr>
+      <tr><td>事業内容</td><td>私設図書館の設置・運営／地域社会の課題解決に資する事業／各種イベントの企画・立案・実施及び受託</td></tr>
+      <tr><td>決算公告</td><td>
+        <a href="https://drive.google.com/file/d/1sgbYSDLU0fQ5MchWEL7UM9Dr6Qp3z3j5/view" target="_blank" style="color:var(--blue);">第1期</a>　
+        <a href="https://drive.google.com/file/d/1zoHvG0l9g8nPAJ3YA1zNw9ET4L5R5NST/view" target="_blank" style="color:var(--blue);">第2期</a>　
+        <a href="https://drive.google.com/file/d/19jBswlFuhjx4CTTa3PK1QSB3S3QWi4Ib/view" target="_blank" style="color:var(--blue);">第3期</a>
+      </td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <p class="section-label">Contact</p>
+  <h2 class="section-title reveal">私たちの考えに共感してくださった方、<br>ぜひご連絡ください。</h2>
+  <p class="section-body reveal" style="margin: 0 auto 2.5rem;">一緒にゴキゲンな暮らしを作っていきましょう。</p>
+  <div class="contact-sns reveal">
+    <a href="https://twitter.com/oricom2022" target="_blank" class="sns-btn sns-tw">Twitter / X</a>
+    <a href="https://www.facebook.com/oricom2022" target="_blank" class="sns-btn sns-fb">Facebook</a>
+    <a href="https://www.instagram.com/oricom2022" target="_blank" class="sns-btn sns-ig">Instagram</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    <canvas id="footer-canvas" width="28" height="28"></canvas>
+    <span>一般社団法人オリコム</span>
+  </div>
+  <p>© 2022 一般社団法人オリコム. All rights reserved.</p>
+</footer>
+
+<script>
+// ===== ロゴデータ =====
+const ORANGE='rgb(237,109,70)',YELLOW='rgb(253,210,42)',GREEN='rgb(146,189,67)',BLUE='rgb(116,181,228)';
+const paths=[
+  {color:ORANGE,pts:[[0,64.471],[32.236,32.235],[0,0],[-16.118,16.117],[-16.118,48.353]]},
+  {color:YELLOW,pts:[[0,-16.118],[32.236,16.118],[64.471,-16.118],[48.354,-32.236],[16.118,-32.236]]},
+  {color:GREEN, pts:[[0,-64.471],[-32.236,-32.235],[0,0],[16.118,-16.117],[16.118,-48.353]]},
+  {color:YELLOW,pts:[[0,-32.236],[32.236,0],[64.471,-32.236]]},
+  {color:GREEN, pts:[[0,-64.471],[-32.236,-32.235],[0,0]]},
+  {color:BLUE,  pts:[[0,-32.236],[-32.236,0],[32.236,0]]},
+  {color:ORANGE,pts:[[0,64.471],[32.236,32.235],[0,0]]},
+  {color:BLUE,  pts:[[0,16.118],[-32.236,-16.118],[-64.471,16.118],[-48.354,32.236],[-16.118,32.236]]},
+];
+const offsets=[[223.2437,180.2888],[157.0756,262.5745],[155.379,244.7594],[89.2109,210.8278],[223.2437,176.8947],[257.176,246.4567],[155.379,248.1535],[221.5471,162.4738]];
+const s4=4.166667,gO=[-371.712083,-468.432083];
+const allAbs=paths.map(({pts},i)=>pts.map(([px,py])=>[(offsets[i][0]+px)*s4+gO[0],(offsets[i][1]+py)*s4+gO[1]]));
+let mnX=Infinity,mxX=-Infinity,mnY=Infinity,mxY=-Infinity;
+allAbs.forEach(p=>p.forEach(([x,y])=>{mnX=Math.min(mnX,x);mxX=Math.max(mxX,x);mnY=Math.min(mnY,y);mxY=Math.max(mxY,y);}));
+const ds=Math.min(360/(mxX-mnX),360/(mxY-mnY)),cx0=(mnX+mxX)/2,cy0=(mnY+mxY)/2;
+const norm=allAbs.map(p=>p.map(([x,y])=>[(x-cx0)*ds,(y-cy0)*ds]));
+
+function drawLogo(ctx,tx,ty,scale,angle,alpha=1){
+  ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,alpha));
+  ctx.translate(tx,ty);ctx.rotate(angle);ctx.scale(scale,scale);
+  norm.forEach((pts,i)=>{
+    ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);
+    for(let j=1;j<pts.length;j++)ctx.lineTo(pts[j][0],pts[j][1]);
+    ctx.closePath();ctx.fillStyle=paths[i].color;ctx.fill();
+  });
+  ctx.restore();
+}
+
+function ease(t){ return t*t*(3-2*t); }
+
+// ===== LOADER（回転アニメーション）=====
+const lc=document.getElementById('loader-canvas'),lx=lc.getContext('2d');
+const LW=120,LH=120;
+let lAngle=0,lRaf;
+
+function loaderLoop(){
+  lx.clearRect(0,0,LW,LH);
+  drawLogo(lx,LW/2,LH/2,0.28,lAngle);
+  lAngle+=0.04;
+  lRaf=requestAnimationFrame(loaderLoop);
+}
+loaderLoop();
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    document.getElementById('loader').classList.add('hidden');
+    cancelAnimationFrame(lRaf);
+  },1400);
+});
+
+// ===== NAV・FOOTER ロゴ =====
+function drawSmall(id,scale){
+  const c=document.getElementById(id);if(!c)return;
+  const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
+  drawLogo(ctx,c.width/2,c.height/2,scale,0);
+}
+drawSmall('nav-canvas',0.085);
+drawSmall('footer-canvas',0.065);
+
+// ===== SLIDESHOW =====
+const slides=document.querySelectorAll('.slide');
+const dots=document.querySelectorAll('.slide-dot');
+let current=0,slideTimer;
+
+function goSlide(idx){
+  slides[current].classList.remove('active');
+  dots[current].classList.remove('active');
+  current=idx;
+  slides[current].classList.add('active');
+  dots[current].classList.add('active');
+  clearInterval(slideTimer);
+  slideTimer=setInterval(nextSlide,4000);
+}
+function nextSlide(){ goSlide((current+1)%slides.length); }
+slideTimer=setInterval(nextSlide,4000);
+
+// ===== HAMBURGER =====
+const ham=document.getElementById('ham'),mm=document.getElementById('mobile-menu');
+ham.addEventListener('click',()=>{ham.classList.toggle('open');mm.classList.toggle('open');});
+function closeMobile(){ham.classList.remove('open');mm.classList.remove('open');}
+
+// ===== SCROLL REVEAL =====
+const obs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');}),{threshold:0.15});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>
